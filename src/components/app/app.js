@@ -97,6 +97,7 @@ export default class App extends Component {
       currentPage: 1,
     });
 
+    if (!e.target.value && navigator.onLine) this.getPopularFilms();
     if (e.target.value && navigator.onLine) this.getFilms(e.target.value);
     if (!navigator.onLine) {
       this.setState({ ArrayFilms: null, error: true, errorName: 'INTERNET DISCONNECTED' });
@@ -114,7 +115,7 @@ export default class App extends Component {
     this.moviesSearch
       .getUserRatingFilms(idGuest)
       .then((resolve) => {
-        this.setState({ arrayUserRatingFilm: resolve, value: '' });
+        this.setState({ arrayUserRatingFilm: resolve });
       })
       .catch((reject) => {
         this.setState({ loading: false, error: true, errorName: reject.message });
@@ -172,7 +173,16 @@ export default class App extends Component {
 
     return (
       <div className="app">
-        <Tabs defaultActiveKey="1" items={items} centered onChange={() => this.getArrayUserRatingFilms()} />
+        <Tabs
+          defaultActiveKey="1"
+          items={items}
+          centered
+          onChange={(index) => {
+            if (index === '2') {
+              this.getArrayUserRatingFilms();
+            }
+          }}
+        />
       </div>
     );
   }
