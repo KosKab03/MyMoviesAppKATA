@@ -24,6 +24,40 @@ export default class App extends Component {
     errorName: null,
   };
 
+  componentDidMount() {
+    this.getPopularFilms();
+    this.moviesSearch.getGuestSession().catch((reject) => {
+      this.setState({ loading: false, error: true, errorName: reject.message });
+    });
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    const { value, currentPage } = this.state;
+
+    if (!value && prevState.currentPage !== currentPage) {
+      this.getPopularFilms(currentPage);
+    }
+    if (value && prevState.currentPage !== currentPage) {
+      this.getFilms(value);
+    }
+  }
+
+  getPopularFilms(page) {
+    this.setState({ ArrayFilms: null, loading: true, notFound: false, error: false });
+    this.moviesSearch
+      .getPopularFilms(page)
+      .then((resolve) => {
+        this.setState(() => ({
+          ArrayFilms: resolve,
+          loading: false,
+          totalPages: 500,
+        }));
+      })
+      .catch((reject) => {
+        this.setState({ loading: false, error: true, errorName: reject.message });
+      });
+  }
+
   getFilms = debounce(async (text) => {
     this.setState({ ArrayFilms: null, loading: true, notFound: false, error: false });
     const { currentPage } = this.state;
@@ -43,6 +77,10 @@ export default class App extends Component {
         this.setState({ loading: false, error: true, errorName: reject.message });
       });
 
+    this.getTotalPages(text);
+  }, 500);
+
+  getTotalPages(text) {
     this.moviesSearch
       .getTotalPages(text)
       .then((count) => {
@@ -51,12 +89,12 @@ export default class App extends Component {
       .catch((reject) => {
         this.setState({ loading: false, error: true, errorName: reject.message });
       });
-    this.moviesSearch.getGuestSession();
-  }, 500);
+  }
 
   onLabelChange = (e) => {
     this.setState({
       value: e.target.value,
+      currentPage: 1,
     });
 
     if (e.target.value && navigator.onLine) this.getFilms(e.target.value);
@@ -69,8 +107,6 @@ export default class App extends Component {
     this.setState(() => ({
       currentPage: page,
     }));
-    const { value } = this.state;
-    this.getFilms(value);
   };
 
   getArrayUserRatingFilms() {
@@ -78,7 +114,7 @@ export default class App extends Component {
     this.moviesSearch
       .getUserRatingFilms(idGuest)
       .then((resolve) => {
-        this.setState({ arrayUserRatingFilm: resolve });
+        this.setState({ arrayUserRatingFilm: resolve, value: '' });
       })
       .catch((reject) => {
         this.setState({ loading: false, error: true, errorName: reject.message });

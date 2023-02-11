@@ -38,6 +38,13 @@ export default class MoviesSearch {
     return createArrayFilms(arrayFilms);
   }
 
+  async getPopularFilms(page = 1) {
+    const res = await fetch(`${this.apiBase}/movie/popular?${this.apiKey}&language=en-US&page=${page}`);
+
+    const arrayFilms = await res.json().then((resolve) => resolve.results);
+    return createArrayFilms(arrayFilms);
+  }
+
   async getTotalPages(text) {
     const res = await fetch(
       `${this.apiBase}/search/movie?${this.apiKey}&guest_session_id=06462f24e181850c463f2fa6d1503967&query=${text}`
