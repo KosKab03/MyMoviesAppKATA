@@ -3,11 +3,9 @@ import { Input } from 'antd';
 
 import './search-film.css';
 
-function SearchFilm({ value, onLabelChange, onSearchFilm }) {
+function SearchFilm({ value, onLabelChange }) {
   return (
-    <form className="search-film" onSubmit={onSearchFilm}>
-      <Input placeholder="Type to search..." onChange={onLabelChange} value={value} allowClear />
-    </form>
+    <Input className="search-film" placeholder="Type to search..." onChange={onLabelChange} value={value} allowClear />
   );
 }
 

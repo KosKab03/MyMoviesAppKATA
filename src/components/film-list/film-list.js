@@ -1,8 +1,9 @@
 import FilmItem from '../film-item';
+import PaginationList from '../pagination-list';
+import SpinLoading from '../app/spin-loading';
+import { ErrorWindow, WarningWindow } from '../alerts/alerts';
 import React from 'react';
 import { Row } from 'antd';
-
-import './film-list.css';
 
 function createListFilms(arr) {
   if (arr) {
@@ -14,11 +15,25 @@ function createListFilms(arr) {
   return '';
 }
 
-function FilmList({ ArrayFilms }) {
+function FilmList({ ArrayFilms, loading, notFound, error, errorName, tabRating }) {
+  const spinner = loading && <SpinLoading />;
+  const onPagination = !tabRating && <PaginationList />;
+  const content = !loading && !notFound && ArrayFilms && (
+    <div>
+      <Row gutter={[32, 32]}>{createListFilms(ArrayFilms)}</Row>
+      {onPagination}
+    </div>
+  );
+  const missing = notFound && <WarningWindow />;
+  const errorMessage = error && <ErrorWindow errorName={errorName} />;
+
   return (
-    <Row className="row" gutter={[32, 32]}>
-      {createListFilms(ArrayFilms)}
-    </Row>
+    <div>
+      {spinner}
+      {content}
+      {missing}
+      {errorMessage}
+    </div>
   );
 }
 

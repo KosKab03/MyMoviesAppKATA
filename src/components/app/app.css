@@ -2,7 +2,7 @@ body {
   background-color: #111111;
 }
 
-li{
+li {
   list-style-type: none;
 }
 
@@ -22,4 +22,16 @@ ul {
   background-color: #ffffff;
   box-shadow: 0px 0px 30px 0px #ffffff;
   border-radius: 5px;
+}
+
+.ant-tabs-nav {
+  width: max-content;
+}
+
+.ant-tabs-top > .ant-tabs-nav,
+.ant-tabs-bottom > .ant-tabs-nav,
+.ant-tabs-top > div > .ant-tabs-nav,
+.ant-tabs-bottom > div > .ant-tabs-nav {
+  margin: 0 auto;
+  margin-bottom: 20px;
 }

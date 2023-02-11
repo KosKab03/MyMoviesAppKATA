@@ -1,11 +1,11 @@
-import SpinLoading from './spin-loading';
 import FilmList from '../film-list';
 import SearchFilm from '../search-film';
 import MoviesSearch from '../services/movies-search';
-import { ErrorWindow, WarningWindow } from '../alerts/alerts';
+import { FilmListProvider } from '../film-list-context';
 
 import React, { Component } from 'react';
-
+import { Tabs } from 'antd';
+import { debounce } from 'lodash';
 import './app.css';
 import 'antd/dist/reset.css';
 
@@ -14,6 +14,9 @@ export default class App extends Component {
 
   state = {
     ArrayFilms: null,
+    arrayUserRatingFilm: null,
+    totalPages: null,
+    currentPage: 1,
     value: '',
     loading: null,
     notFound: false,
@@ -21,15 +24,15 @@ export default class App extends Component {
     errorName: null,
   };
 
-  getFilms(text) {
+  getFilms = debounce(async (text) => {
     this.setState({ ArrayFilms: null, loading: true, notFound: false, error: false });
-    this.moviesSearch
-      .createArrayFilms(text)
-      .then((resolve) => {
-        if (resolve.length) {
-          const arrFilms = resolve;
+    const { currentPage } = this.state;
+    await this.moviesSearch
+      .getArrayFilms(text, currentPage)
+      .then((arrayFilms) => {
+        if (arrayFilms.length) {
           this.setState(() => ({
-            ArrayFilms: arrFilms,
+            ArrayFilms: arrayFilms,
             loading: false,
           }));
         } else {
@@ -39,38 +42,101 @@ export default class App extends Component {
       .catch((reject) => {
         this.setState({ loading: false, error: true, errorName: reject.message });
       });
-  }
+
+    this.moviesSearch
+      .getTotalPages(text)
+      .then((count) => {
+        this.setState({ totalPages: count });
+      })
+      .catch((reject) => {
+        this.setState({ loading: false, error: true, errorName: reject.message });
+      });
+    this.moviesSearch.getGuestSession();
+  }, 500);
 
   onLabelChange = (e) => {
     this.setState({
       value: e.target.value,
     });
-  };
 
-  onSearchFilm = (e) => {
-    e.preventDefault();
-    const { value } = this.state;
-    if (value && navigator.onLine) this.getFilms(value);
+    if (e.target.value && navigator.onLine) this.getFilms(e.target.value);
     if (!navigator.onLine) {
       this.setState({ ArrayFilms: null, error: true, errorName: 'INTERNET DISCONNECTED' });
     }
   };
 
-  render() {
-    const { ArrayFilms, value, loading, notFound, error, errorName } = this.state;
+  setPage = (page) => {
+    this.setState(() => ({
+      currentPage: page,
+    }));
+    const { value } = this.state;
+    this.getFilms(value);
+  };
 
-    const spinner = loading ? <SpinLoading /> : null;
-    const content = !loading && !notFound ? <FilmList ArrayFilms={ArrayFilms} /> : null;
-    const missing = notFound ? <WarningWindow /> : null;
-    const errorMessage = error ? <ErrorWindow errorName={errorName} /> : null;
+  getArrayUserRatingFilms() {
+    const idGuest = localStorage.getItem(0);
+    this.moviesSearch
+      .getUserRatingFilms(idGuest)
+      .then((resolve) => {
+        this.setState({ arrayUserRatingFilm: resolve });
+      })
+      .catch((reject) => {
+        this.setState({ loading: false, error: true, errorName: reject.message });
+      });
+  }
+
+  addRatedFilm = (id, rating) => {
+    const idGuest = localStorage.getItem(0);
+    this.moviesSearch.setRatingFilm(id, idGuest, rating);
+  };
+
+  render() {
+    const { ArrayFilms, arrayUserRatingFilm, totalPages, currentPage, value, loading, notFound, error, errorName } =
+      this.state;
+
+    const items = [
+      {
+        key: '1',
+        label: 'Search',
+        children: (
+          <div>
+            <SearchFilm value={value} onLabelChange={this.onLabelChange} onSearchFilm={this.onSearchFilm} />
+            <FilmListProvider
+              value={{ totalPages, setPage: this.setPage, currentPage, addRatedFilm: this.addRatedFilm }}
+            >
+              <FilmList
+                ArrayFilms={ArrayFilms}
+                loading={loading}
+                notFound={notFound}
+                error={error}
+                errorName={errorName}
+                tabRating={false}
+              />
+            </FilmListProvider>
+          </div>
+        ),
+      },
+      {
+        key: '2',
+        label: 'Rated',
+        children: (
+          <FilmListProvider value={{ addRatedFilm: this.addRatedFilm }}>
+            <FilmList
+              ArrayFilms={arrayUserRatingFilm}
+              loading={loading}
+              notFound={notFound}
+              error={error}
+              errorName={errorName}
+              tabRating
+            />
+          </FilmListProvider>
+        ),
+      },
+    ];
 
     return (
       <div className="app">
-        <SearchFilm value={value} onLabelChange={this.onLabelChange} onSearchFilm={this.onSearchFilm} />
-        {spinner}
-        {content}
-        {missing}
-        {errorMessage}
+        <Tabs defaultActiveKey="1" items={items} centered onChange={() => this.getArrayUserRatingFilms()} />
       </div>
     );
   }
