@@ -41,7 +41,7 @@ export default class App extends Component {
     if (value && prevState.currentPage !== currentPage && tabIndex === 1) {
       this.getFilms(value);
     }
-    if (tabIndex === 2) {
+    if (tabIndex === 2 && prevState.currentPage !== currentPage) {
       this.getArrayUserRatingFilms();
     }
   }

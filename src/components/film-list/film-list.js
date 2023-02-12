@@ -17,6 +17,7 @@ function createListFilms(arr) {
 
 function FilmList({ ArrayFilms, loading, notFound, error, errorName, totalPages }) {
   const spinner = loading && <SpinLoading />;
+
   const visPagination = totalPages === 1 || <PaginationList />;
   const content = !loading && !notFound && ArrayFilms && (
     <div>
