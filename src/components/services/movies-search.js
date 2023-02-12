@@ -62,12 +62,13 @@ export default class MoviesSearch {
     });
   }
 
-  async getUserRatingFilms(idGuest) {
+  async getUserRatingFilms(idGuest, page = 1) {
     const res = await fetch(
-      `${this.apiBase}/guest_session/${idGuest}/rated/movies?${this.apiKey}&language=en-US&sort_by=created_at.asc`
+      `${this.apiBase}/guest_session/${idGuest}/rated/movies?${this.apiKey}&language=en-US&sort_by=created_at.asc&page=${page}`
     );
     const arrayUserRatingFilm = await res.json();
-    if (arrayUserRatingFilm.results) return createArrayFilms(arrayUserRatingFilm.results);
+    const totalPages = arrayUserRatingFilm.total_pages;
+    if (arrayUserRatingFilm.results) return [totalPages, createArrayFilms(arrayUserRatingFilm.results)];
     return '';
   }
 

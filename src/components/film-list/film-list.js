@@ -15,13 +15,13 @@ function createListFilms(arr) {
   return '';
 }
 
-function FilmList({ ArrayFilms, loading, notFound, error, errorName, tabRating }) {
+function FilmList({ ArrayFilms, loading, notFound, error, errorName, totalPages }) {
   const spinner = loading && <SpinLoading />;
-  const onPagination = !tabRating && <PaginationList />;
+  const visPagination = totalPages === 1 || <PaginationList />;
   const content = !loading && !notFound && ArrayFilms && (
     <div>
       <Row gutter={[32, 32]}>{createListFilms(ArrayFilms)}</Row>
-      {onPagination}
+      {visPagination}
     </div>
   );
   const missing = notFound && <WarningWindow />;

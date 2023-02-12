@@ -16,6 +16,18 @@ function ImageCard({ poster }) {
 
 function FilmItem({ data }) {
   const { title, key, poster, genre, overview, releaseDate, stars, userRating } = data;
+  let borderColor;
+
+  if (!stars || stars < 3) {
+    borderColor = '#E90000';
+  } else if (stars >= 3 && stars < 5) {
+    borderColor = '#E97E00';
+  } else if (stars >= 5 && stars < 7) {
+    borderColor = '#E9D100';
+  } else if (stars >= 7) {
+    borderColor = '#66E900';
+  }
+
   return (
     <FilmListConsumer>
       {({ addRatedFilm }) => (
@@ -43,7 +55,9 @@ function FilmItem({ data }) {
                   addRatedFilm(key, value);
                 }}
               />
-              <span className="description_header-rating">{stars}</span>
+              <span className="description_header-rating" style={{ border: `solid 2px ${borderColor}` }}>
+                {stars}
+              </span>
             </aside>
           </div>
         </Col>

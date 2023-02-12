@@ -22,6 +22,7 @@ export default class App extends Component {
     notFound: false,
     error: false,
     errorName: null,
+    tabIndex: 1,
   };
 
   componentDidMount() {
@@ -32,13 +33,16 @@ export default class App extends Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const { value, currentPage } = this.state;
+    const { value, currentPage, tabIndex } = this.state;
 
-    if (!value && prevState.currentPage !== currentPage) {
+    if (!value && prevState.currentPage !== currentPage && tabIndex === 1) {
       this.getPopularFilms(currentPage);
     }
-    if (value && prevState.currentPage !== currentPage) {
+    if (value && prevState.currentPage !== currentPage && tabIndex === 1) {
       this.getFilms(value);
+    }
+    if (tabIndex === 2) {
+      this.getArrayUserRatingFilms();
     }
   }
 
@@ -51,6 +55,7 @@ export default class App extends Component {
           ArrayFilms: resolve,
           loading: false,
           totalPages: 500,
+          currentPage: page,
         }));
       })
       .catch((reject) => {
@@ -112,10 +117,12 @@ export default class App extends Component {
 
   getArrayUserRatingFilms() {
     const idGuest = localStorage.getItem(0);
+    const { currentPage } = this.state;
     this.moviesSearch
-      .getUserRatingFilms(idGuest)
+      .getUserRatingFilms(idGuest, currentPage)
       .then((resolve) => {
-        this.setState({ arrayUserRatingFilm: resolve });
+        const [totalPages, arrayFilms] = resolve;
+        this.setState({ arrayUserRatingFilm: arrayFilms, totalPages });
       })
       .catch((reject) => {
         this.setState({ loading: false, error: true, errorName: reject.message });
@@ -147,7 +154,7 @@ export default class App extends Component {
                 notFound={notFound}
                 error={error}
                 errorName={errorName}
-                tabRating={false}
+                totalPages={totalPages}
               />
             </FilmListProvider>
           </div>
@@ -157,14 +164,14 @@ export default class App extends Component {
         key: '2',
         label: 'Rated',
         children: (
-          <FilmListProvider value={{ addRatedFilm: this.addRatedFilm }}>
+          <FilmListProvider value={{ totalPages, setPage: this.setPage, currentPage, addRatedFilm: this.addRatedFilm }}>
             <FilmList
               ArrayFilms={arrayUserRatingFilm}
               loading={loading}
               notFound={notFound}
               error={error}
               errorName={errorName}
-              tabRating
+              totalPages={totalPages}
             />
           </FilmListProvider>
         ),
@@ -179,7 +186,11 @@ export default class App extends Component {
           centered
           onChange={(index) => {
             if (index === '2') {
-              this.getArrayUserRatingFilms();
+              this.setState({ tabIndex: 2, currentPage: 1 });
+              this.getArrayUserRatingFilms(1);
+            } else {
+              this.getPopularFilms(1);
+              this.setState({ tabIndex: 1 });
             }
           }}
         />
