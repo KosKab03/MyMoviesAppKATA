@@ -1,3 +1,4 @@
+import { getBorderColor } from '../helpers/helpers';
 import { FilmListConsumer } from '../film-list-context';
 import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,17 +17,7 @@ function ImageCard({ poster }) {
 
 function FilmItem({ data }) {
   const { title, key, poster, genre, overview, releaseDate, stars, userRating } = data;
-  let borderColor;
-
-  if (!stars || stars < 3) {
-    borderColor = '#E90000';
-  } else if (stars >= 3 && stars < 5) {
-    borderColor = '#E97E00';
-  } else if (stars >= 5 && stars < 7) {
-    borderColor = '#E9D100';
-  } else if (stars >= 7) {
-    borderColor = '#66E900';
-  }
+  const borderColor = getBorderColor(stars);
 
   return (
     <FilmListConsumer>

@@ -2,12 +2,18 @@ import FilmList from '../film-list';
 import SearchFilm from '../search-film';
 import MoviesSearch from '../services/movies-search';
 import { FilmListProvider } from '../film-list-context';
+import { createArrayFilms } from '../helpers/helpers';
 
 import React, { Component } from 'react';
 import { Tabs } from 'antd';
 import { debounce } from 'lodash';
 import './app.css';
 import 'antd/dist/reset.css';
+
+const tabs = {
+  search: 'search',
+  rated: 'rated',
+};
 
 export default class App extends Component {
   moviesSearch = new MoviesSearch();
@@ -22,7 +28,7 @@ export default class App extends Component {
     notFound: false,
     error: false,
     errorName: null,
-    tabIndex: 1,
+    tab: 'search',
   };
 
   componentDidMount() {
@@ -33,16 +39,16 @@ export default class App extends Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const { value, currentPage, tabIndex } = this.state;
+    const { value, currentPage, tab } = this.state;
 
-    if (!value && prevState.currentPage !== currentPage && tabIndex === 1) {
+    if (!value && prevState.currentPage !== currentPage && tab === tabs.search) {
       this.getPopularFilms(currentPage);
     }
-    if (value && prevState.currentPage !== currentPage && tabIndex === 1) {
+    if (value && prevState.currentPage !== currentPage && tab === tabs.search) {
       this.getFilms(value);
     }
-    if (tabIndex === 2 && prevState.currentPage !== currentPage) {
-      this.getArrayUserRatingFilms();
+    if (tab === tabs.rated && prevState.currentPage !== currentPage) {
+      this.UserRatingFilms();
     }
   }
 
@@ -51,8 +57,9 @@ export default class App extends Component {
     this.moviesSearch
       .getPopularFilms(page)
       .then((resolve) => {
+        const arrayFilms = createArrayFilms(resolve);
         this.setState(() => ({
-          ArrayFilms: resolve,
+          ArrayFilms: arrayFilms,
           loading: false,
           totalPages: 500,
           currentPage: page,
@@ -68,7 +75,8 @@ export default class App extends Component {
     const { currentPage } = this.state;
     await this.moviesSearch
       .getArrayFilms(text, currentPage)
-      .then((arrayFilms) => {
+      .then((resolve) => {
+        const arrayFilms = createArrayFilms(resolve);
         if (arrayFilms.length) {
           this.setState(() => ({
             ArrayFilms: arrayFilms,
@@ -82,12 +90,12 @@ export default class App extends Component {
         this.setState({ loading: false, error: true, errorName: reject.message });
       });
 
-    this.getTotalPages(text);
+    this.getTotalPagesByText(text);
   }, 500);
 
-  getTotalPages(text) {
+  getTotalPagesByText(text) {
     this.moviesSearch
-      .getTotalPages(text)
+      .getTotalPagesByText(text)
       .then((count) => {
         this.setState({ totalPages: count });
       })
@@ -115,13 +123,17 @@ export default class App extends Component {
     }));
   };
 
-  getArrayUserRatingFilms() {
-    const idGuest = localStorage.getItem(0);
+  addRatedFilm = (id, rating) => {
+    this.moviesSearch.setRatingFilm(id, rating);
+  };
+
+  UserRatingFilms() {
     const { currentPage } = this.state;
     this.moviesSearch
-      .getUserRatingFilms(idGuest, currentPage)
+      .getUserRatingFilms(currentPage)
       .then((resolve) => {
-        const [totalPages, arrayFilms] = resolve;
+        const [totalPages, results] = resolve;
+        const arrayFilms = createArrayFilms(results);
         this.setState({ arrayUserRatingFilm: arrayFilms, totalPages });
       })
       .catch((reject) => {
@@ -129,54 +141,35 @@ export default class App extends Component {
       });
   }
 
-  addRatedFilm = (id, rating) => {
-    const idGuest = localStorage.getItem(0);
-    this.moviesSearch.setRatingFilm(id, idGuest, rating);
-  };
-
   render() {
-    const { ArrayFilms, arrayUserRatingFilm, totalPages, currentPage, value, loading, notFound, error, errorName } =
-      this.state;
+    const {
+      ArrayFilms,
+      arrayUserRatingFilm,
+      totalPages,
+      currentPage,
+      value,
+      loading,
+      notFound,
+      error,
+      errorName,
+      tab,
+    } = this.state;
 
     const items = [
       {
         key: '1',
         label: 'Search',
-        children: (
-          <div>
-            <SearchFilm value={value} onLabelChange={this.onLabelChange} onSearchFilm={this.onSearchFilm} />
-            <FilmListProvider
-              value={{ totalPages, setPage: this.setPage, currentPage, addRatedFilm: this.addRatedFilm }}
-            >
-              <FilmList
-                ArrayFilms={ArrayFilms}
-                loading={loading}
-                notFound={notFound}
-                error={error}
-                errorName={errorName}
-                totalPages={totalPages}
-              />
-            </FilmListProvider>
-          </div>
-        ),
       },
       {
         key: '2',
         label: 'Rated',
-        children: (
-          <FilmListProvider value={{ totalPages, setPage: this.setPage, currentPage, addRatedFilm: this.addRatedFilm }}>
-            <FilmList
-              ArrayFilms={arrayUserRatingFilm}
-              loading={loading}
-              notFound={notFound}
-              error={error}
-              errorName={errorName}
-              totalPages={totalPages}
-            />
-          </FilmListProvider>
-        ),
       },
     ];
+
+    const renderArrayFilms = tab === tabs.search ? ArrayFilms : arrayUserRatingFilm;
+    const searchInput = tab === tabs.search && (
+      <SearchFilm value={value} onLabelChange={this.onLabelChange} onSearchFilm={this.onSearchFilm} />
+    );
 
     return (
       <div className="app">
@@ -186,14 +179,25 @@ export default class App extends Component {
           centered
           onChange={(index) => {
             if (index === '2') {
-              this.setState({ tabIndex: 2, currentPage: 1 });
-              this.getArrayUserRatingFilms(1);
+              this.setState({ tab: 'rated', currentPage: 1 });
+              this.UserRatingFilms(1);
             } else {
               this.getPopularFilms(1);
-              this.setState({ tabIndex: 1 });
+              this.setState({ tab: 'search', value: '' });
             }
           }}
         />
+        {searchInput}
+        <FilmListProvider value={{ totalPages, setPage: this.setPage, currentPage, addRatedFilm: this.addRatedFilm }}>
+          <FilmList
+            ArrayFilms={renderArrayFilms}
+            loading={loading}
+            notFound={notFound}
+            error={error}
+            errorName={errorName}
+            totalPages={totalPages}
+          />
+        </FilmListProvider>
       </div>
     );
   }

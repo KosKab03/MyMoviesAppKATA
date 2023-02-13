@@ -1,3 +1,3 @@
-import alerts from './error-window';
+import alerts from './alerts';
 
 export default alerts;
